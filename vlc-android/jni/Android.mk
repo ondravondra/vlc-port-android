@@ -5,6 +5,7 @@ LOCAL_MODULE    := libvlcjni
 
 LOCAL_SRC_FILES := libvlcjni.c libvlcjni-util.c libvlcjni-track.c libvlcjni-medialist.c aout.c vout.c libvlcjni-equalizer.c native_crash_handler.c
 LOCAL_SRC_FILES += thumbnailer.c
+LOCAL_SRC_FILES += vout-surface.cpp
 ifneq ($(ANDROID_API),android-21)
 # compat functions not needed after android-21
 LOCAL_SRC_FILES += pthread-condattr.c pthread-rwlocks.c pthread-once.c eventfd.c sem.c pipe2.c

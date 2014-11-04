@@ -54,12 +54,12 @@
 
 #define VLC_JNI_VERSION JNI_VERSION_1_2
 
+#include "vout-surface.h"
+
 #define THREAD_NAME "libvlcjni"
 int jni_attach_thread(JNIEnv **env, const char *thread_name);
 void jni_detach_thread();
 int jni_get_env(JNIEnv **env);
-
-extern int createVoutAndroidInstance();
 
 static void add_media_options(libvlc_media_t *p_md, JNIEnv *env, jobjectArray mediaOptions)
 {

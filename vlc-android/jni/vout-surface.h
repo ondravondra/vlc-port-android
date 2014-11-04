@@ -13,7 +13,16 @@ typedef struct vout_android_surface_s {
 
 } vout_android_surface_t;
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 int createVoutAndroidInstance();
 vout_android_surface_t* getVoutAndroidInstanceSurface(int instanceId);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* VLC_ANDROID_JNI_VOUT_SURFACE_H_ */

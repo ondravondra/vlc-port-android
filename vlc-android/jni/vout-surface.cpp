@@ -22,18 +22,60 @@ typedef struct vout_android_surface_s {
 
 std::tr1::unordered_map<int, vout_android_surface_t*> vout_android_surface_map;
 typedef std::tr1::unordered_map<int, vout_android_surface_t*>::const_iterator vout_android_surface_map_item;
-sem_t vout_android_surface_map_lock;
+sem_t vout_android_surface_map_lock = {};
 #define MAP_LOCK_MAX 32
 
-void *jni_LockAndGetAndroidSurface(int instanceId) {
+static vout_android_surface_t* getInstanceSurface(int instanceId) {
 	sem_wait(&vout_android_surface_map_lock);
 	vout_android_surface_map_item item = vout_android_surface_map.find(instanceId);
 	if (item == vout_android_surface_map.end()) {
 		return NULL;
 	}
 
-    pthread_mutex_lock(&item->second->vout_android_lock);
-    while (item->second->vout_android_surf == NULL)
-        pthread_cond_wait(&item->second->vout_android_surf_attached, &item->second->vout_android_lock);
-    return item->second->vout_android_surf;
+	return item->second;
+}
+
+void *jni_LockAndGetSubtitlesSurface(int instanceId) {
+	vout_android_surface_t *surf = getInstanceSurface(instanceId);
+	if (!surf) {
+		return NULL;
+	}
+
+    pthread_mutex_lock(&surf->vout_android_lock);
+    while (surf->vout_android_subtitles_surf == NULL)
+        pthread_cond_wait(&surf->vout_android_surf_attached, &surf->vout_android_lock);
+    return surf->vout_android_subtitles_surf;
+}
+
+void *jni_LockAndGetAndroidSurface(int instanceId) {
+	vout_android_surface_t *surf = getInstanceSurface(instanceId);
+	if (!surf) {
+		return NULL;
+	}
+
+    pthread_mutex_lock(&surf->vout_android_lock);
+    while (surf->vout_android_surf == NULL)
+        pthread_cond_wait(&surf->vout_android_surf_attached, &surf->vout_android_lock);
+    return surf->vout_android_surf;
+}
+
+jobject jni_LockAndGetAndroidJavaSurface(int instanceId) {
+	vout_android_surface_t *surf = getInstanceSurface(instanceId);
+	if (!surf) {
+		return NULL;
+	}
+
+	pthread_mutex_lock(&surf->vout_android_lock);
+    while (surf->vout_android_java_surf == NULL)
+        pthread_cond_wait(&surf->vout_android_surf_attached, &surf->vout_android_lock);
+    return surf->vout_android_java_surf;
+}
+
+void jni_UnlockAndroidSurface(int instanceId) {
+	vout_android_surface_map_item item = vout_android_surface_map.find(instanceId);
+	if (item == vout_android_surface_map.end()) {
+		return;
+	}
+    pthread_mutex_unlock(&item->second->vout_android_lock);
+    sem_post(&vout_android_surface_map_lock);
 }

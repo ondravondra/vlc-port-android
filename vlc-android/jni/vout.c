@@ -23,6 +23,8 @@
 
 #include <jni.h>
 
+#include "vout-surface.h"
+
 #define THREAD_NAME "jni_vout"
 extern int jni_attach_thread(JNIEnv **env, const char *thread_name);
 extern void jni_detach_thread();
@@ -76,6 +78,17 @@ void jni_EventHardwareAccelerationError()
     jni_detach_thread();
 }
 
+static vout_android_surface_t *getInstanceSurface(JNIEnv *env, jobject thiz)
+{
+	int instanceId = (*env)->GetIntField(env, thiz,
+	    		(*env)->GetFieldID(
+	    				env,
+	    				(*env)->GetObjectClass(env, thiz),
+						"voutInstanceId",
+						"I"));
+	return getVoutAndroidInstanceSurface(instanceId);
+}
+
 void jni_SetAndroidSurfaceSizeEnv(JNIEnv *p_env, int width, int height, int visible_width, int visible_height, int sar_num, int sar_den)
 {
     if (vout_android_gui == NULL)
@@ -113,9 +126,15 @@ void Java_org_videolan_libvlc_LibVLC_eventVideoPlayerActivityCreated(JNIEnv *env
 }
 
 void Java_org_videolan_libvlc_LibVLC_attachSurface(JNIEnv *env, jobject thiz, jobject surf, jobject gui) {
-    pthread_mutex_lock(&vout_android_lock);
     jclass clz;
     jfieldID fid;
+
+    vout_android_surface_t *instSurf = getInstanceSurface(env, thiz);
+    if (!instSurf) {
+    	return;
+    }
+
+    pthread_mutex_lock(&instSurf->vout_android_lock);
 
     clz = (*env)->FindClass(env, "org/videolan/libvlc/LibVlcUtil");
     jmethodID methodId = (*env)->GetStaticMethodID(env, clz, "isGingerbreadOrLater", "()Z");
@@ -132,25 +151,30 @@ void Java_org_videolan_libvlc_LibVLC_attachSurface(JNIEnv *env, jobject thiz, jo
             }
             fid = (*env)->GetFieldID(env, clz, "mNativeSurface", "I");
         }
-        vout_android_surf = (void*)(*env)->GetIntField(env, surf, fid);
+        instSurf->vout_android_surf = (void*)(*env)->GetIntField(env, surf, fid);
         (*env)->DeleteLocalRef(env, clz);
     }
-    vout_android_gui = (*env)->NewGlobalRef(env, gui);
-    vout_android_java_surf = (*env)->NewGlobalRef(env, surf);
-    pthread_cond_signal(&vout_android_surf_attached);
-    pthread_mutex_unlock(&vout_android_lock);
+    instSurf->vout_android_gui = (*env)->NewGlobalRef(env, gui);
+    instSurf->vout_android_java_surf = (*env)->NewGlobalRef(env, surf);
+    pthread_cond_signal(&instSurf->vout_android_surf_attached);
+    pthread_mutex_unlock(&instSurf->vout_android_lock);
 }
 
 void Java_org_videolan_libvlc_LibVLC_detachSurface(JNIEnv *env, jobject thiz) {
-    pthread_mutex_lock(&vout_android_lock);
-    vout_android_surf = NULL;
-    if (vout_android_gui != NULL)
-        (*env)->DeleteGlobalRef(env, vout_android_gui);
-    if (vout_android_java_surf != NULL)
-        (*env)->DeleteGlobalRef(env, vout_android_java_surf);
-    vout_android_gui = NULL;
-    vout_android_java_surf = NULL;
-    pthread_mutex_unlock(&vout_android_lock);
+	vout_android_surface_t *instSurf = getInstanceSurface(env, thiz);
+	if (!instSurf) {
+		return;
+	}
+
+	pthread_mutex_lock(&instSurf->vout_android_lock);
+	instSurf->vout_android_surf = NULL;
+    if (instSurf->vout_android_gui != NULL)
+        (*env)->DeleteGlobalRef(env, instSurf->vout_android_gui);
+    if (instSurf->vout_android_java_surf != NULL)
+        (*env)->DeleteGlobalRef(env, instSurf->vout_android_java_surf);
+    instSurf->vout_android_gui = NULL;
+    instSurf->vout_android_java_surf = NULL;
+    pthread_mutex_unlock(&instSurf->vout_android_lock);
 }
 
 void Java_org_videolan_libvlc_LibVLC_attachSubtitlesSurface(JNIEnv *env, jobject thiz, jobject surf) {

@@ -59,6 +59,8 @@ int jni_attach_thread(JNIEnv **env, const char *thread_name);
 void jni_detach_thread();
 int jni_get_env(JNIEnv **env);
 
+extern int createVoutAndroidInstance();
+
 static void add_media_options(libvlc_media_t *p_md, JNIEnv *env, jobjectArray mediaOptions)
 {
     int stringCount = (*env)->GetArrayLength(env, mediaOptions);
@@ -252,8 +254,12 @@ static bool verbosity;
 
 void Java_org_videolan_libvlc_LibVLC_nativeInit(JNIEnv *env, jobject thiz)
 {
-    //only use OpenSLES if java side says we can
-    jclass cls = (*env)->GetObjectClass(env, thiz);
+	//only use OpenSLES if java side says we can
+	jclass cls = (*env)->GetObjectClass(env, thiz);
+
+	int voutInstanceId = createVoutAndroidInstance();
+	(*env)->SetIntField(env, thiz, (*env)->GetFieldID(env, cls, "voutInstanceId", "I"), voutInstanceId);
+
     jmethodID methodId = (*env)->GetMethodID(env, cls, "getAout", "()I");
     bool use_opensles = (*env)->CallIntMethod(env, thiz, methodId) == AOUT_OPENSLES;
 

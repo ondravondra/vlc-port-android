@@ -27,7 +27,7 @@ static inline void writeUnlockMap() {
 	}
 }
 
-vout_android_surface_t* getVoutAndroidInstanceSurface(int instanceId) {
+vout_android_surface_t* useVoutAndroidInstanceSurface(int instanceId) {
 	sem_wait(&vout_android_surface_map_lock);
 	vout_android_surface_map_item item = vout_android_surface_map.find(instanceId);
 	if (item == vout_android_surface_map.end()) {
@@ -47,7 +47,7 @@ int createVoutAndroidInstance() {
 }
 
 void *jni_LockAndGetSubtitlesSurface(int instanceId) {
-	vout_android_surface_t *surf = getVoutAndroidInstanceSurface(instanceId);
+	vout_android_surface_t *surf = useVoutAndroidInstanceSurface(instanceId);
 	if (!surf) {
 		return NULL;
 	}
@@ -59,7 +59,7 @@ void *jni_LockAndGetSubtitlesSurface(int instanceId) {
 }
 
 void *jni_LockAndGetAndroidSurface(int instanceId) {
-	vout_android_surface_t *surf = getVoutAndroidInstanceSurface(instanceId);
+	vout_android_surface_t *surf = useVoutAndroidInstanceSurface(instanceId);
 	if (!surf) {
 		return NULL;
 	}
@@ -71,7 +71,7 @@ void *jni_LockAndGetAndroidSurface(int instanceId) {
 }
 
 jobject jni_LockAndGetAndroidJavaSurface(int instanceId) {
-	vout_android_surface_t *surf = getVoutAndroidInstanceSurface(instanceId);
+	vout_android_surface_t *surf = useVoutAndroidInstanceSurface(instanceId);
 	if (!surf) {
 		return NULL;
 	}
@@ -88,5 +88,9 @@ void jni_UnlockAndroidSurface(int instanceId) {
 		return;
 	}
     pthread_mutex_unlock(&item->second->vout_android_lock);
-    sem_post(&vout_android_surface_map_lock);
+    releaseVoutAndroidInstanceSurface();
+}
+
+void releaseVoutAndroidInstanceSurface() {
+	sem_post(&vout_android_surface_map_lock);
 }

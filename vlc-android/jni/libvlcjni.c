@@ -342,6 +342,9 @@ void Java_org_videolan_libvlc_LibVLC_nativeInit(JNIEnv *env, jobject thiz)
         /* Android video API is a mess */
         use_opengles2 ? "--vout=gles2" : "--vout=androidsurface",
         "--androidsurface-chroma", chromastr != NULL && chromastr[0] != 0 ? chromastr : "RV32",
+
+		"--androidsurface-instance-id", voutInstanceId,
+
         /* XXX: we can't recover from direct rendering failure */
         direct_rendering ? "" : "--no-mediacodec-dr",
         direct_rendering ? "" : NO_IOMX_DR,

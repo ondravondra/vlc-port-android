@@ -86,28 +86,37 @@ static vout_android_surface_t *getInstanceSurface(JNIEnv *env, jobject thiz)
 	    				(*env)->GetObjectClass(env, thiz),
 						"voutInstanceId",
 						"I"));
-	return getVoutAndroidInstanceSurface(instanceId);
+	return useVoutAndroidInstanceSurface(instanceId);
 }
 
-void jni_SetAndroidSurfaceSizeEnv(JNIEnv *p_env, int width, int height, int visible_width, int visible_height, int sar_num, int sar_den)
+void jni_SetAndroidSurfaceSizeEnv(int instanceId, JNIEnv *p_env, int width, int height, int visible_width, int visible_height, int sar_num, int sar_den)
 {
-    if (vout_android_gui == NULL)
-        return;
+	vout_android_surface_t *surf = useVoutAndroidInstanceSurface(instanceId);
+	if (!surf) {
+		return;
+	}
 
-    jclass cls = (*p_env)->GetObjectClass (p_env, vout_android_gui);
+    if (surf->vout_android_gui == NULL) {
+    	releaseVoutAndroidInstanceSurface();
+    	return;
+    }
+
+    jclass cls = (*p_env)->GetObjectClass (p_env, surf->vout_android_gui);
     jmethodID methodId = (*p_env)->GetMethodID (p_env, cls, "setSurfaceSize", "(IIIIII)V");
 
-    (*p_env)->CallVoidMethod (p_env, vout_android_gui, methodId, width, height, visible_width, visible_height, sar_num, sar_den);
+    (*p_env)->CallVoidMethod (p_env, surf->vout_android_gui, methodId, width, height, visible_width, visible_height, sar_num, sar_den);
 
     (*p_env)->DeleteLocalRef(p_env, cls);
+
+    releaseVoutAndroidInstanceSurface();
 }
 
-void jni_SetAndroidSurfaceSize(int width, int height, int visible_width, int visible_height, int sar_num, int sar_den)
+void jni_SetAndroidSurfaceSize(int instanceId, int width, int height, int visible_width, int visible_height, int sar_num, int sar_den)
 {
     JNIEnv *p_env;
 
     jni_attach_thread(&p_env, THREAD_NAME);
-    jni_SetAndroidSurfaceSizeEnv(p_env, width, height, visible_width, visible_height, sar_num, sar_den);
+    jni_SetAndroidSurfaceSizeEnv(instanceId, p_env, width, height, visible_width, visible_height, sar_num, sar_den);
 
     jni_detach_thread();
 }
@@ -158,6 +167,7 @@ void Java_org_videolan_libvlc_LibVLC_attachSurface(JNIEnv *env, jobject thiz, jo
     instSurf->vout_android_java_surf = (*env)->NewGlobalRef(env, surf);
     pthread_cond_signal(&instSurf->vout_android_surf_attached);
     pthread_mutex_unlock(&instSurf->vout_android_lock);
+    releaseVoutAndroidInstanceSurface();
 }
 
 void Java_org_videolan_libvlc_LibVLC_detachSurface(JNIEnv *env, jobject thiz) {
@@ -175,6 +185,7 @@ void Java_org_videolan_libvlc_LibVLC_detachSurface(JNIEnv *env, jobject thiz) {
     instSurf->vout_android_gui = NULL;
     instSurf->vout_android_java_surf = NULL;
     pthread_mutex_unlock(&instSurf->vout_android_lock);
+    releaseVoutAndroidInstanceSurface();
 }
 
 void Java_org_videolan_libvlc_LibVLC_attachSubtitlesSurface(JNIEnv *env, jobject thiz, jobject surf) {

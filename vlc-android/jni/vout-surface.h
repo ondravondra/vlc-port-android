@@ -19,8 +19,14 @@ extern "C"
 #endif
 
 int createVoutAndroidInstance();
-vout_android_surface_t* getVoutAndroidInstanceSurface(int instanceId);
-
+vout_android_surface_t* useVoutAndroidInstanceSurface(int instanceId);
+void releaseVoutAndroidInstanceSurface();
+/*
+void *jni_LockAndGetSubtitlesSurface(int instanceId);
+void *jni_LockAndGetAndroidSurface(int instanceId);
+jobject jni_LockAndGetAndroidJavaSurface(int instanceId);
+void jni_UnlockAndroidSurface(int instanceId);
+*/
 #ifdef __cplusplus
 }
 #endif

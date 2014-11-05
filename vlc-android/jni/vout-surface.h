@@ -21,12 +21,13 @@ extern "C"
 int createVoutAndroidInstance();
 vout_android_surface_t* useVoutAndroidInstanceSurface(int instanceId);
 void releaseVoutAndroidInstanceSurface();
-/*
+
 void *jni_LockAndGetSubtitlesSurface(int instanceId);
 void *jni_LockAndGetAndroidSurface(int instanceId);
 jobject jni_LockAndGetAndroidJavaSurface(int instanceId);
 void jni_UnlockAndroidSurface(int instanceId);
-*/
+bool jni_IsVideoPlayerActivityCreated(int instanceId);
+
 #ifdef __cplusplus
 }
 #endif

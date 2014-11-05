@@ -94,3 +94,16 @@ void jni_UnlockAndroidSurface(int instanceId) {
 void releaseVoutAndroidInstanceSurface() {
 	sem_post(&vout_android_surface_map_lock);
 }
+
+bool jni_IsVideoPlayerActivityCreated(int instanceId) {
+	vout_android_surface_t *surf = useVoutAndroidInstanceSurface(instanceId);
+	if (!surf) {
+		return NULL;
+	}
+
+    pthread_mutex_lock(&surf->vout_android_lock);
+    bool result = surf->vout_video_player_activity_created;
+    pthread_mutex_unlock(&surf->vout_android_lock);
+    releaseVoutAndroidInstanceSurface();
+    return result;
+}

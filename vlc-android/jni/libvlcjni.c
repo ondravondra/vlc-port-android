@@ -316,6 +316,9 @@ void Java_org_videolan_libvlc_LibVLC_nativeInit(JNIEnv *env, jobject thiz)
         (*env)->ReleaseStringUTFChars(env, cachePath, cache_path);
     }
 
+    char voutInstanceIdStr[32];
+    sprintf(voutInstanceIdStr, "%i", voutInstanceId);
+
     /* Don't add any invalid options, otherwise it causes LibVLC to crash */
     const char *argv[] = {
         /* CPU intensive plugin, setting for slow devices */
@@ -343,7 +346,7 @@ void Java_org_videolan_libvlc_LibVLC_nativeInit(JNIEnv *env, jobject thiz)
         use_opengles2 ? "--vout=gles2" : "--vout=androidsurface",
         "--androidsurface-chroma", chromastr != NULL && chromastr[0] != 0 ? chromastr : "RV32",
 
-		"--androidsurface-instance-id", voutInstanceId,
+		"--androidsurface-instance-id", voutInstanceIdStr,
 
         /* XXX: we can't recover from direct rendering failure */
         direct_rendering ? "" : "--no-mediacodec-dr",

@@ -194,9 +194,10 @@ static void vlc_event_callback(const libvlc_event_t *ev, void *data)
     }
 
     /* Find the callback ID */
-    jmethodID methodID = (*env)->GetMethodID(env, cls, "callback", "(ILandroid/os/Bundle;)V");
+    jobject vlcObject = (jobject) data;
+    jmethodID methodID = (*env)->GetMethodID(env, cls, "callback", "(ILandroid/os/Bundle;Lorg/videolan/libvlc/LibVLC;)V");
     if (methodID) {
-        (*env)->CallVoidMethod(env, eventHandlerInstance, methodID, ev->type, bundle);
+        (*env)->CallVoidMethod(env, eventHandlerInstance, methodID, ev->type, bundle, vlcObject);
     } else {
         LOGE("EventHandler: failed to get the callback method");
     }
@@ -212,16 +213,27 @@ jint JNI_OnLoad(JavaVM *vm, void *reserved)
     // Keep a reference on the Java VM.
     myVm = vm;
 
-    pthread_mutex_init(&vout_android_lock, NULL);
-    pthread_cond_init(&vout_android_surf_attached, NULL);
+    JNIEnv* env;
+    if (jni_get_env(&env) < 0) {
+        return -1;
+    }
+
+    jclass eventHandlerCls = (*env)->FindClass(env, "org/videolan/libvlc/EventHandler");
+    jmethodID methodId = (*env)->GetStaticMethodID(env, eventHandlerCls, "getInstance", "()Lorg/videolan/libvlc/EventHandler;");
+    jobject eventHandler = (*env)->CallStaticObjectMethod(env, eventHandlerCls, methodId);
+
+    eventHandlerInstance = (*env)->NewGlobalRef(env, eventHandler);
 
     LOGD("JNI interface loaded.");
     return VLC_JNI_VERSION;
 }
 
 void JNI_OnUnload(JavaVM* vm, void* reserved) {
-    pthread_mutex_destroy(&vout_android_lock);
-    pthread_cond_destroy(&vout_android_surf_attached);
+    JNIEnv* env;
+    if (jni_get_env(&env) == 0 && eventHandlerInstance != NULL) {
+        (*env)->DeleteGlobalRef(env, eventHandlerInstance);
+    }
+    LOGD("JNI interface un-loaded.");
 }
 
 int jni_attach_thread(JNIEnv **env, const char *thread_name)
@@ -250,8 +262,22 @@ int jni_get_env(JNIEnv **env)
 // FIXME: use atomics
 static bool verbosity;
 
+
 void Java_org_videolan_libvlc_LibVLC_nativeInit(JNIEnv *env, jobject thiz)
 {
+    // initialize android_surface_value_t structure
+    android_surf_value_t *android_surface = (android_surf_value_t *) malloc(sizeof(android_surf_value_t));
+
+    android_surface->vout_android_surf = NULL;
+    android_surface->vout_android_gui = NULL;
+    android_surface->vout_android_java_surf = NULL;
+    android_surface->vout_android_subtitles_surf = NULL;
+
+    pthread_mutex_init(&android_surface->vout_android_lock, NULL);
+    pthread_cond_init(&android_surface->vout_android_surf_attached, NULL);
+
+    setLong(env, thiz, "mAndroidSurfaceValue", (jlong)(intptr_t)android_surface);
+
     //only use OpenSLES if java side says we can
     jclass cls = (*env)->GetObjectClass(env, thiz);
     jmethodID methodId = (*env)->GetMethodID(env, cls, "getAout", "()I");
@@ -360,12 +386,23 @@ void Java_org_videolan_libvlc_LibVLC_nativeInit(JNIEnv *env, jobject thiz)
 
     libvlc_log_set(instance, debug_log, &verbosity);
 
-    init_native_crash_handler(env, thiz);
+    // init_native_crash_handler(env, thiz);
 }
 
 void Java_org_videolan_libvlc_LibVLC_nativeDestroy(JNIEnv *env, jobject thiz)
 {
-    destroy_native_crash_handler(env);
+    // clear surface lock and condition
+    android_surf_value_t *android_surface = (android_surf_value_t *)(intptr_t)getLong(env, thiz, "mAndroidSurfaceValue");
+
+    if (android_surface != NULL) {
+        pthread_mutex_destroy(&android_surface->vout_android_lock);
+        pthread_cond_destroy(&android_surface->vout_android_surf_attached);
+
+        free(android_surface);
+    }
+    setLong(env, thiz, "mAndroidSurfaceValue", 0);
+
+    // destroy_native_crash_handler(env);
 
     releaseMediaPlayer(env, thiz);
     jlong libVlcInstance = getLong(env, thiz, "mLibVlcInstance");
@@ -431,7 +468,7 @@ void Java_org_videolan_libvlc_LibVLC_playMRL(JNIEnv *env, jobject thiz, jlong in
         libvlc_MediaPlayerEncounteredError
     };
     for(int i = 0; i < (sizeof(mp_events) / sizeof(*mp_events)); i++)
-        libvlc_event_attach(ev, mp_events[i], vlc_event_callback, myVm);
+        libvlc_event_attach(ev, mp_events[i], vlc_event_callback, (void*) myJavaLibVLC);
 
     /* Keep a pointer to this media player */
     setLong(env, thiz, "mInternalMediaPlayerInstance", (jlong)(intptr_t)mp);
@@ -449,13 +486,17 @@ void Java_org_videolan_libvlc_LibVLC_playMRL(JNIEnv *env, jobject thiz, jlong in
 
     (*env)->ReleaseStringUTFChars(env, mrl, p_mrl);
 
+    // set the Android surface value structure before playing
+    android_surf_value_t *object = (android_surf_value_t *)(intptr_t)getLong(env, thiz, "mAndroidSurfaceValue");
+    libvlc_media_player_set_surfacevalue(mp, object);
+
     /* Connect the media event manager. */
     libvlc_event_manager_t *ev_media = libvlc_media_event_manager(p_md);
     static const libvlc_event_type_t mp_media_events[] = {
         libvlc_MediaParsedChanged
     };
     for(int i = 0; i < (sizeof(mp_media_events) / sizeof(*mp_media_events)); i++)
-        libvlc_event_attach(ev_media, mp_media_events[i], vlc_event_callback, myVm);
+        libvlc_event_attach(ev_media, mp_media_events[i], vlc_event_callback, (void*) myJavaLibVLC);
 
     libvlc_media_player_set_media(mp, p_md);
     libvlc_media_player_play(mp);

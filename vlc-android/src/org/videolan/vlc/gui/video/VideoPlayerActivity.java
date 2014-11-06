@@ -1,7 +1,7 @@
 /*****************************************************************************
  * VideoPlayerActivity.java
  *****************************************************************************
- * Copyright © 2011-2014 VLC authors and VideoLAN
+ * Copyright �� 2011-2014 VLC authors and VideoLAN
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -441,7 +441,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
         mLibVLC.eventVideoPlayerActivityCreated(true);
 
         EventHandler em = EventHandler.getInstance();
-        em.addHandler(eventHandler);
+        em.addHandler(mLibVLC, eventHandler);
 
         this.setVolumeControlStream(AudioManager.STREAM_MUSIC);
 
@@ -564,7 +564,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
         unregisterReceiver(mReceiver);
 
         EventHandler em = EventHandler.getInstance();
-        em.removeHandler(eventHandler);
+        em.removeHandler(mLibVLC, eventHandler);
 
         // MediaCodec opaque direct rendering should not be used anymore since there is no surface to attach.
         mLibVLC.eventVideoPlayerActivityCreated(false);
@@ -1157,7 +1157,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 
     public void eventHardwareAccelerationError() {
         EventHandler em = EventHandler.getInstance();
-        em.callback(EventHandler.HardwareAccelerationError, new Bundle());
+        em.callback(EventHandler.HardwareAccelerationError, new Bundle(), mLibVLC);
     }
 
     private void handleHardwareAccelerationError() {

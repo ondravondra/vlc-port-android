@@ -105,12 +105,12 @@ public class MediaList {
         ArrayList<String> children = new ArrayList<String>();
         int ret = expandMedia(mLibVLC, position, children);
         if(ret == 0) {
-            mEventHandler.callback(EventHandler.CustomMediaListExpanding, new Bundle());
+            mEventHandler.callback(EventHandler.CustomMediaListExpanding, new Bundle(), mLibVLC);
             this.remove(position);
             for(String mrl : children) {
                 this.insert(position, mrl);
             }
-            mEventHandler.callback(EventHandler.CustomMediaListExpandingEnd, new Bundle());
+            mEventHandler.callback(EventHandler.CustomMediaListExpandingEnd, new Bundle(), mLibVLC);
         }
         return ret;
     }
@@ -155,7 +155,7 @@ public class MediaList {
         Bundle b = new Bundle();
         b.putInt("index_before", startPosition);
         b.putInt("index_after", endPosition);
-        mEventHandler.callback(EventHandler.CustomMediaListItemMoved, b);
+        mEventHandler.callback(EventHandler.CustomMediaListItemMoved, b, mLibVLC);
     }
 
     public void remove(int position) {
@@ -231,6 +231,6 @@ public class MediaList {
         Bundle b = new Bundle();
         b.putString("item_uri", uri);
         b.putInt("item_index", position);
-        mEventHandler.callback(event, b);
+        mEventHandler.callback(event, b, mLibVLC);
     }
 }

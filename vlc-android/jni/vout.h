@@ -21,8 +21,16 @@
 #ifndef LIBVLCJNI_VOUT_H
 #define LIBVLCJNI_VOUT_H
 
-/* vout lock initialized in vout.c */
-pthread_mutex_t vout_android_lock;
-pthread_cond_t vout_android_surf_attached;
+#include <pthread.h>
+
+typedef struct android_surf_value_t {
+    pthread_mutex_t vout_android_lock;
+    pthread_cond_t vout_android_surf_attached;
+    void *vout_android_surf;
+    void *vout_android_gui;
+    jobject vout_android_java_surf;
+    jobject vout_android_subtitles_surf;
+    bool vout_video_player_activity_created;
+} android_surf_value_t;
 
 #endif // LIBVLCJNI_VOUT_H

@@ -1,7 +1,7 @@
 /*****************************************************************************
  * AudioService.java
  *****************************************************************************
- * Copyright © 2011-2013 VLC authors and VideoLAN
+ * Copyright �� 2011-2013 VLC authors and VideoLAN
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -618,7 +618,7 @@ public class AudioService extends Service {
         String MRL = mLibVLC.getMediaList().getMRL(mCurrentIndex);
         int index = mCurrentIndex;
         mCurrentIndex = -1;
-        mEventHandler.removeHandler(mVlcEventHandler);
+        mEventHandler.removeHandler(mLibVLC, mVlcEventHandler);
         // Preserve playback when switching to video
         hideNotification(false);
 
@@ -817,8 +817,8 @@ public class AudioService extends Service {
 
     private void stop() {
         mLibVLC.stop();
-        mEventHandler.removeHandler(mVlcEventHandler);
-        mLibVLC.getMediaList().getEventHandler().removeHandler(mListEventHandler);
+        mEventHandler.removeHandler(mLibVLC, mVlcEventHandler);
+        mLibVLC.getMediaList().getEventHandler().removeHandler(mLibVLC, mListEventHandler);
         setRemoteControlClientPlaybackState(EventHandler.MediaPlayerStopped);
         mCurrentIndex = -1;
         mPrevious.clear();
@@ -1134,9 +1134,9 @@ public class AudioService extends Service {
                 throws RemoteException {
 
             Log.v(TAG, "Loading position " + ((Integer)position).toString() + " in " + mediaPathList.toString());
-            mEventHandler.addHandler(mVlcEventHandler);
+            mEventHandler.addHandler(mLibVLC, mVlcEventHandler);
 
-            mLibVLC.getMediaList().getEventHandler().removeHandler(mListEventHandler);
+            mLibVLC.getMediaList().getEventHandler().removeHandler(mLibVLC, mListEventHandler);
             mLibVLC.setMediaList();
             mLibVLC.getPrimaryMediaList().clear();
             MediaList mediaList = mLibVLC.getMediaList();
@@ -1171,7 +1171,7 @@ public class AudioService extends Service {
             }
 
             // Add handler after loading the list
-            mLibVLC.getMediaList().getEventHandler().addHandler(mListEventHandler);
+            mLibVLC.getMediaList().getEventHandler().addHandler(mLibVLC, mListEventHandler);
 
             mLibVLC.playIndex(mCurrentIndex);
             mHandler.sendEmptyMessage(SHOW_PROGRESS);
@@ -1202,7 +1202,7 @@ public class AudioService extends Service {
                 mCurrentIndex = 0;
             }
 
-            mEventHandler.addHandler(mVlcEventHandler);
+            mEventHandler.addHandler(mLibVLC, mVlcEventHandler);
             mLibVLC.playIndex(mCurrentIndex);
             mHandler.sendEmptyMessage(SHOW_PROGRESS);
             setUpRemoteControlClient();
@@ -1226,7 +1226,7 @@ public class AudioService extends Service {
 
             if(URI == null || !mLibVLC.isPlaying())
                 return;
-            mEventHandler.addHandler(mVlcEventHandler);
+            mEventHandler.addHandler(mLibVLC, mVlcEventHandler);
             mCurrentIndex = index;
 
             // Notify everyone

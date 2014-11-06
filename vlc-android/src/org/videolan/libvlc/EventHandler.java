@@ -21,6 +21,9 @@
 package org.videolan.libvlc;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import android.os.Bundle;
 import android.os.Handler;
@@ -96,11 +99,11 @@ public class EventHandler {
 
     public static final int HardwareAccelerationError         = 0x3000;
 
-    private ArrayList<Handler> mEventHandler;
+    private Map<LibVLC, ArrayList<Handler>> mMapHandler;
     private static EventHandler mInstance;
 
     EventHandler() {
-        mEventHandler = new ArrayList<Handler>();
+        mMapHandler = new HashMap<LibVLC, ArrayList<Handler>>();
     }
 
     public static EventHandler getInstance() {
@@ -110,22 +113,26 @@ public class EventHandler {
         return mInstance;
     }
 
-    public void addHandler(Handler handler) {
-        if (!mEventHandler.contains(handler))
-            mEventHandler.add(handler);
+    public void addHandler(LibVLC vlcObject, Handler handler) {
+        if (!mMapHandler.containsKey(vlcObject)) {
+            mMapHandler.put(vlcObject, new ArrayList<Handler>());
+        }
+        mMapHandler.get(vlcObject).add(handler);
     }
 
-    public void removeHandler(Handler handler) {
-        mEventHandler.remove(handler);
+    public void removeHandler(LibVLC vlcObject, Handler handler) {
+        mMapHandler.get(vlcObject).remove(handler);
     }
 
     /** This method is called by a native thread **/
-    public void callback(int event, Bundle b) {
+    public void callback(int event, Bundle b, LibVLC vlcObject) {
+        List<Handler> eventHandlers = mMapHandler.get(vlcObject);
         b.putInt("event", event);
-        for (int i = 0; i < mEventHandler.size(); i++) {
+        for (int i = 0; i < eventHandlers.size(); i++) {
             Message msg = Message.obtain();
             msg.setData(b);
-            mEventHandler.get(i).sendMessage(msg);
+            msg.obj = vlcObject;
+            eventHandlers.get(i).sendMessage(msg);
         }
     }
 }

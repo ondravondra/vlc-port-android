@@ -1,8 +1,8 @@
 /*****************************************************************************
  * HistoryAdapter.java
  *****************************************************************************
- * Copyright © 2012-2013 VLC authors and VideoLAN
- * Copyright © 2012-2013 Edward Wang
+ * Copyright �� 2012-2013 VLC authors and VideoLAN
+ * Copyright �� 2012-2013 Edward Wang
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -56,7 +56,7 @@ public class HistoryAdapter extends BaseAdapter {
         }
 
         EventHandler em = mLibVLC.getPrimaryMediaList().getEventHandler();
-        em.addHandler(new HistoryEventHandler(this));
+        em.addHandler(mLibVLC, new HistoryEventHandler(this));
     }
 
     @Override

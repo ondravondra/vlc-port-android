@@ -65,6 +65,9 @@ public class LibVLC {
     private int mInternalMediaPlayerIndex = 0; // Read-only, reserved for JNI
     private long mInternalMediaPlayerInstance = 0; // Read-only, reserved for JNI
 
+    // Android surface structure
+    private long mAndroidSurfaceValue = 0; // Read-only, reserved for JNI
+
     private MediaList mMediaList; // Pointer to media list being followed
     private MediaList mPrimaryList; // Primary/default media list; see getPrimaryMediaList()
 
@@ -173,10 +176,9 @@ public class LibVLC {
     }
 
     /**
-     * Constructor
-     * It is private because this class is a singleton.
+     * Constructor.
      */
-    private LibVLC() {
+    public LibVLC() {
         mAout = new AudioOutput();
     }
 
@@ -242,7 +244,7 @@ public class LibVLC {
      */
     public native void setSurface(Surface f);
 
-    public static synchronized void restart(Context context) {
+    public static synchronized void restartInstance(Context context) {
         if (sInstance != null) {
             try {
                 sInstance.destroy();
@@ -250,6 +252,15 @@ public class LibVLC {
             } catch (LibVlcException lve) {
                 Log.e(TAG, "Unable to reinit libvlc: " + lve);
             }
+        }
+    }
+
+    public void restart(Context context) {
+        try {
+            this.destroy();
+            this.init(context);
+        } catch (LibVlcException lve) {
+            Log.e(TAG, "Unable to reinit libvlc: " + lve);
         }
     }
 
@@ -463,7 +474,7 @@ public class LibVLC {
         applyEqualizer();
     }
 
-    private void applyEqualizer()
+    protected void applyEqualizer()
     {
         setNativeEqualizer(mInternalMediaPlayerInstance, this.equalizer);
     }

@@ -139,7 +139,7 @@ jobject getEventHandlerReference(JNIEnv *env, jobject thiz, jobject eventHandler
         return NULL;
     }
 
-    jmethodID methodID = (*env)->GetMethodID(env, cls, "callback", "(ILandroid/os/Bundle;)V");
+    jmethodID methodID = (*env)->GetMethodID(env, cls, "callback", "(ILandroid/os/Bundle;Lorg/videolan/libvlc/LibVLC;)V");
     if (!methodID) {
         LOGE("setEventHandler: failed to get the callback method");
         return NULL;
